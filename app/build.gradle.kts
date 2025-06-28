@@ -70,4 +70,18 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.navigation.compose)
 
+    // Room
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+
+    // Retrofit + OkHttp
+    implementation(libs.retrofit)
+    implementation(libs.okhttp.logging)
+
+    // Moshi
+    implementation(libs.retrofit.converter.moshi)
+    implementation(libs.moshi.core)
+    implementation(libs.moshi.kotlin)
+
 }
