@@ -22,3 +22,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+// 💡 @AndroidEntryPoint 역할
+// - Hilt가 이 Activity에 의존성을 주입할 수 있게 함
+// - ViewModel, Repository 등을 자동으로 생성
+// - 생명주기에 맞춰 의존성 관리
+
+// 💡 rememberNavController() 역할
+// - NavController 인스턴스 생성 및 기억
+// - 컴포지션 중에 상태 유지
+// - 화면 전환 시 백스택 관리

@@ -29,6 +29,11 @@ sealed class Screen(val route: String) {
     }
 }
 
+// 💡 sealed class 사용 이유
+// - 컴파일 타임에 모든 화면을 알 수 있음
+// - when 문에서 else 불필요
+// - 새로운 화면 추가 시 누락된 부분을 컴파일러가 알려줌
+
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
@@ -61,3 +66,8 @@ fun AppNavGraph(
         }
     }
 }
+
+// 💡 Navigation 설계 원칙
+// 1. 타입 안전한 라우팅 (헬퍼 함수 사용)
+// 2. 파라미터 유효성 검사
+// 3. 명확한 라우트 구조
