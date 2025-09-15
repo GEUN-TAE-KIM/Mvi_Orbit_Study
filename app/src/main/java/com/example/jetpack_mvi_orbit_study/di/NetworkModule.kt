@@ -14,36 +14,51 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Singleton
 
 @Module
-@InstallIn(SingletonComponent::class)
+@InstallIn(SingletonComponent::class)  // 앱 전체에서 단일 인스턴스 사용
 object NetworkModule {
 
     @Provides
     @Singleton
     fun provideMoshi(): Moshi =
         Moshi.Builder()
-            .add(KotlinJsonAdapterFactory())
+            .add(KotlinJsonAdapterFactory())  // 코틀린 data class 직렬화 지원
             .build()
+
+    // 💡 왜 Moshi인가?
+    // - Gson보다 빠름 (코틀린 특화)
+    // - 코틀린 null safety 지원
+    // - 더 적은 메모리 사용
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BODY  // 요청/응답 로그
+                }
+            )
+            .build()
+
+    // 💡 HttpLoggingInterceptor 레벨 설명
+    // - NONE: 로그 없음
+    // - BASIC: 요청/응답 라인만
+    // - HEADERS: 헤더 포함
+    // - BODY: 전체 요청/응답 내용
 
     @Provides
     @Singleton
     fun provideRetrofit(
-        moshi: Moshi
+        moshi: Moshi,
+        okHttpClient: OkHttpClient
     ): Retrofit = Retrofit.Builder()
-        .baseUrl("https://www.naver.com/")
+        .baseUrl("https://www.naver.com/")  // 실제 API URL
         .addConverterFactory(MoshiConverterFactory.create(moshi))
-        .client(
-            OkHttpClient.Builder()
-                .addInterceptor(
-                    HttpLoggingInterceptor().apply {
-                        level = HttpLoggingInterceptor.Level.BASIC
-                    }
-                )
-                .build()
-        )
+        .client(okHttpClient)
         .build()
 
     @Provides
     @Singleton
-    fun provideApi(retrofit: Retrofit): MessageApi =
+    fun provideMessageApi(retrofit: Retrofit): MessageApi =
         retrofit.create(MessageApi::class.java)
 }

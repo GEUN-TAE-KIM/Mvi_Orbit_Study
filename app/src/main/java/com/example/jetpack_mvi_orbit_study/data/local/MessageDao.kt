@@ -17,3 +17,8 @@ interface MessageDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<MessageEntity>)
 }
+
+// 💡 Room DAO 특징
+// - Flow 반환: 데이터 변경 시 자동 업데이트
+// - suspend 함수: 백그라운드 스레드에서 실행
+// - OnConflictStrategy.REPLACE: 중복 시 덮어쓰기

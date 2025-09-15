@@ -25,7 +25,12 @@ fun DetailScreen(
 ) {
     val state by viewModel.container.stateFlow.collectAsState()
 
+    // 화면 진입 시 해당 ID의 메시지 로드
     LaunchedEffect(id) { viewModel.onIntent(DetailIntent.Load(id)) }
+
+    // 💡 LaunchedEffect(id) 사용 이유
+    // - id가 변경될 때마다 실행
+    // - 다른 메시지 상세로 이동 시 새로운 데이터 로드
 
     state.message?.let { msg ->
         Column(Modifier.padding(24.dp)) {
