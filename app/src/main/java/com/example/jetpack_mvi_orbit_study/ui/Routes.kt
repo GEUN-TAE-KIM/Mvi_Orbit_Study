@@ -7,8 +7,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.example.jetpack_mvi_orbit_study.ui.detail.DetailScreen
-import com.example.jetpack_mvi_orbit_study.ui.home.HomeScreen
+import com.example.presentation.detail.DetailScreen
+import com.example.presentation.home.HomeScreen
 
 /**
  * ■ 모든 목적지 정의
@@ -24,7 +24,7 @@ sealed class Screen(val route: String) {
     /** 상세 ─ id(Int) 하나만 받음 */
     data object Detail : Screen("detail/{id}") {
         // 외부에서 안전하게 라우트 문자열을 만들 수 있도록 헬퍼 함수 제공
-        fun route(id: Int) = "detail/$id"
+        fun createRoute(id: Int) = "detail/$id"
         const val ID_ARG = "id"
     }
 }
@@ -49,7 +49,7 @@ fun AppNavGraph(
         composable(route = Screen.Home.route) {
             HomeScreen(
                 onItemClick = { id ->
-                    navController.navigate(Screen.Detail.route(id))
+                    navController.navigate(Screen.Detail.createRoute(id))
                 }
             )
         }
@@ -58,11 +58,19 @@ fun AppNavGraph(
         composable(
             route = Screen.Detail.route,
             arguments = listOf(
-                navArgument(Screen.Detail.ID_ARG) { type = NavType.IntType }
+                navArgument(Screen.Detail.ID_ARG) {
+                    type = NavType.IntType
+                }
             )
         ) { backStackEntry ->
             val id = backStackEntry.arguments?.getInt(Screen.Detail.ID_ARG) ?: return@composable
-            DetailScreen(id = id)
+
+            DetailScreen(
+                id = id,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

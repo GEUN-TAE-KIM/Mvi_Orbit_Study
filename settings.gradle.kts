@@ -21,4 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "jetpack_mvi_orbit_study"
 include(":app")
- 
+include(":data")
+include(":domain")
+include(":presentation")
