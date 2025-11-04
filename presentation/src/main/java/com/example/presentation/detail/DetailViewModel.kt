@@ -14,7 +14,23 @@ class DetailViewModel @Inject constructor(
     private val deleteMessageUseCase: DeleteMessageUseCase
 ) : ContainerHost<DetailState, DetailSideEffect>, ViewModel() {
 
-    override val container = container<DetailState, DetailSideEffect>(DetailState())
+    private var currentMessageId: Int? = null
+
+    override val container = container<DetailState, DetailSideEffect>(DetailState()) {
+        repeatOnSubscription {
+            currentMessageId?.let { id ->
+                observeMessageDetailUseCase(id).collect { message ->
+                    reduce {
+                        state.copy(
+                            message = message,
+                            isLoading = false,
+                            error = if (message == null) "Message not found" else null
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     fun onIntent(intent: DetailIntent) = when (intent) {
         is DetailIntent.Load -> loadMessage(intent.id)
@@ -22,22 +38,9 @@ class DetailViewModel @Inject constructor(
         DetailIntent.Delete -> deleteMessage()
     }
 
-    private var currentMessageId: Int? = null
-
     private fun loadMessage(id: Int) = intent {
         currentMessageId = id
-
         reduce { state.copy(isLoading = true, error = null) }
-
-        observeMessageDetailUseCase(id).collect { message ->
-            reduce {
-                state.copy(
-                    message = message,
-                    isLoading = false,
-                    error = if (message == null) "Message not found" else null
-                )
-            }
-        }
     }
 
     private fun refreshMessage() = intent {

@@ -24,14 +24,27 @@ class HomeViewModel @Inject constructor(
     // Orbit Container 초기화
     override val container = container<HomeState, HomeSideEffect>(
         initialState = HomeState()
-    )
+    ) {
+        /**
+         * repeatOnSubscription: UI가 구독할 때마다 자동으로 실행
+         * 리소스 효율성: 화면이 보이지 않을 때는 데이터베이스 관찰을 중단하여 배터리와 메모리 절약
+         * 재구독 처리: 화면이 다시 표시될 때 자동으로 최신 데이터를 다시 구독
+         */
+        repeatOnSubscription {
+            observeMessagesUseCase().collect { messages ->
+                reduce {
+                    state.copy(
+                        items = messages,
+                        isEmpty = messages.isEmpty()
+                    )
+                }
+            }
+        }
+    }
 
     init {
         // 초기 데이터 로드
         loadInitialData()
-
-        // Room DB 변경사항 실시간 관찰
-        observeMessages()
     }
 
     /**
@@ -44,21 +57,6 @@ class HomeViewModel @Inject constructor(
         is HomeIntent.Delete -> onDeleteMessage(intent.id)
         HomeIntent.ClearAndReload -> onClearAndReload()
         HomeIntent.ToggleEmpty -> onToggleEmptyState()
-    }
-
-    /**
-     * intent 예제 1: Flow collect로 실시간 데이터 관찰
-     * - Room DB의 Flow를 구독하여 데이터 변경 시 자동으로 UI 업데이트
-     */
-    private fun observeMessages() = intent {
-        observeMessagesUseCase().collect { messages ->
-            reduce {
-                state.copy(
-                    items = messages,
-                    isEmpty = messages.isEmpty()
-                )
-            }
-        }
     }
 
     /**
