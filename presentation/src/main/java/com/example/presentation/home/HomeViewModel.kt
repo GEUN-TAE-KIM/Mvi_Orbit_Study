@@ -6,12 +6,27 @@ import com.example.domain.usecase.ClearAndReloadMessagesUseCase
 import com.example.domain.usecase.DeleteMessageUseCase
 import com.example.domain.usecase.ObserveMessagesUseCase
 import com.example.domain.usecase.RefreshMessagesUseCase
+import com.example.presentation.util.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import javax.inject.Inject
-import kotlin.random.Random
+
+// 💡 ViewModel의 역할
+// 1. UI 상태 관리 (State)
+// 2. 사용자 액션 처리 (Intent)
+// 3. 비즈니스 로직 실행
+// 4. 외부 효과 발생 (SideEffect)
+
+// 💡 intent { } 블록의 의미
+// - 상태 변경과 사이드 이펙트를 안전하게 처리
+// - 코루틴 스코프 제공
+// - 예외 처리 자동화
+
+// 💡 reduce { } 블록의 의미
+// - 현재 상태를 새로운 상태로 변경
+// - 불변성 유지하며 상태 업데이트
+// - UI 자동 업데이트 트리거
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -20,6 +35,7 @@ class HomeViewModel @Inject constructor(
     private val deleteMessageUseCase: DeleteMessageUseCase,
     private val clearAndReloadMessagesUseCase: ClearAndReloadMessagesUseCase
 ) : ContainerHost<HomeState, HomeSideEffect>, ViewModel() {
+
 
     // Orbit Container 초기화
     override val container = container<HomeState, HomeSideEffect>(
@@ -62,6 +78,10 @@ class HomeViewModel @Inject constructor(
     /**
      * intent 예제 2: 초기 데이터 로드
      * - 앱 시작 시 서버에서 최신 데이터 가져오기
+     *
+     * fold()를 사용하여 Either 처리:
+     * - ifLeft: 실패 시 실행
+     * - ifRight: 성공 시 실행
      */
     private fun loadInitialData() = intent {
         // reduce: 로딩 상태 시작
@@ -69,13 +89,16 @@ class HomeViewModel @Inject constructor(
 
         // 뷰모델에서 비즈니스 로직 호출
         // postSideEffect: 결과에 따른 일회성 이벤트 발생
-        refreshMessagesUseCase()
-            .onSuccess {
+        refreshMessagesUseCase().fold(
+            ifLeft = { error ->
+                // AppError를 사용자 친화적 메시지로 변환
+                val errorMessage = error.toUserMessage()
+                postSideEffect(HomeSideEffect.ShowError(errorMessage))
+            },
+            ifRight = {
                 postSideEffect(HomeSideEffect.ShowSnackBar("Data loaded successfully"))
             }
-            .onFailure { error ->
-                postSideEffect(HomeSideEffect.ShowError(error.message ?: "Unknown error"))
-            }
+        )
 
         // reduce: 로딩 상태 종료
         reduce { state.copy(isLoading = false) }
@@ -89,16 +112,15 @@ class HomeViewModel @Inject constructor(
         // reduce: 새로고침 상태 시작 (스와이프 인디케이터 표시)
         reduce { state.copy(isRefreshing = true) }
 
-        delay(500) // UX를 위한 최소 딜레이
-
         // postSideEffect: 새로고침 결과 알림
-        refreshMessagesUseCase()
-            .onSuccess {
+        refreshMessagesUseCase().fold(
+            ifLeft = { error ->
+                postSideEffect(HomeSideEffect.ShowError("Refresh failed: ${error.toUserMessage()}"))
+            },
+            ifRight = {
                 postSideEffect(HomeSideEffect.ShowSnackBar("Updated!"))
             }
-            .onFailure { error ->
-                postSideEffect(HomeSideEffect.ShowError("Refresh failed: ${error.message}"))
-            }
+        )
 
         // reduce: 새로고침 상태 종료
         reduce { state.copy(isRefreshing = false) }
@@ -120,15 +142,16 @@ class HomeViewModel @Inject constructor(
         // postSideEffect: 삭제 중임을 알림
         postSideEffect(HomeSideEffect.ShowSnackBar("Deleting..."))
 
-        deleteMessageUseCase(id)
-            .onSuccess {
-                postSideEffect(HomeSideEffect.ShowSnackBar("Message deleted"))
-            }
-            .onFailure {
+        deleteMessageUseCase(id).fold(
+            ifLeft = { error ->
                 // 실패 시 롤백
                 reduce { state.copy(items = previousItems) }
-                postSideEffect(HomeSideEffect.ShowError("Failed to delete message"))
+                postSideEffect(HomeSideEffect.ShowError("Failed to delete: ${error.toUserMessage()}"))
+            },
+            ifRight = {
+                postSideEffect(HomeSideEffect.ShowSnackBar("Message deleted"))
             }
+        )
     }
 
     /**
@@ -148,13 +171,14 @@ class HomeViewModel @Inject constructor(
         // postSideEffect: 클리어 알림
         postSideEffect(HomeSideEffect.ShowSnackBar("Clearing data..."))
 
-        clearAndReloadMessagesUseCase()
-            .onSuccess {
+        clearAndReloadMessagesUseCase().fold(
+            ifLeft = { error ->
+                postSideEffect(HomeSideEffect.ShowError("Failed to reload: ${error.toUserMessage()}"))
+            },
+            ifRight = {
                 postSideEffect(HomeSideEffect.ShowSnackBar("Data reloaded!"))
             }
-            .onFailure {
-                postSideEffect(HomeSideEffect.ShowError("Failed to reload"))
-            }
+        )
 
         reduce { state.copy(isLoading = false) }
     }
@@ -195,19 +219,3 @@ class HomeViewModel @Inject constructor(
         }
     }
 }
-
-// 💡 ViewModel의 역할
-// 1. UI 상태 관리 (State)
-// 2. 사용자 액션 처리 (Intent)
-// 3. 비즈니스 로직 실행
-// 4. 외부 효과 발생 (SideEffect)
-
-// 💡 intent { } 블록의 의미
-// - 상태 변경과 사이드 이펙트를 안전하게 처리
-// - 코루틴 스코프 제공
-// - 예외 처리 자동화
-
-// 💡 reduce { } 블록의 의미
-// - 현재 상태를 새로운 상태로 변경
-// - 불변성 유지하며 상태 업데이트
-// - UI 자동 업데이트 트리거

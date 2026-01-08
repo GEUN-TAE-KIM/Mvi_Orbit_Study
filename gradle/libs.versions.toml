@@ -20,6 +20,7 @@ ksp = "2.0.21-1.0.26"
 appcompat = "1.6.1"
 material = "1.10.0"
 material3 = "1.4.0"
+arrow = "1.2.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -65,6 +66,10 @@ moshi-codegen = { group = "com.squareup.moshi", name = "moshi-kotlin-codegen", v
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+
+# Array
+arrow-core = { group = "io.arrow-kt", name = "arrow-core", version.ref = "arrow" }
+arrow-fx-coroutines = { group = "io.arrow-kt", name = "arrow-fx-coroutines", version.ref = "arrow" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
