@@ -1,5 +1,6 @@
 package com.example.data.reposeitory
 
+import android.database.sqlite.SQLiteException
 import arrow.core.Either
 import arrow.core.raise.either
 import com.example.data.datasource.MessageLocalDataSource
@@ -43,27 +44,16 @@ class MessageRepositoryImpl @Inject constructor(
      * - 예외 발생시 catch로 잡아서 Either.Left로 변환
      */
     override suspend fun refreshMessages(): Either<AppError, List<Message>> = either {
-        // try-catch를 사용해 예외를 AppError로 변환
-        // TODO resultOf 로 바꾸기
-        val remoteMessages = try {
-            remoteDataSource.getMessages()
-        } catch (e: SocketTimeoutException) {
-            raise(AppError.NetworkError.Timeout(e))
-        } catch (e: IOException) {
-            raise(AppError.NetworkError.ConnectionFailed(e))
-        } catch (e: HttpException) {
-            raise(AppError.NetworkError.ServerError(e.code()))
-        } catch (e: Exception) {
-            raise(AppError.Unknown(e))
-        }
+
+        // 1. 원격 데이터 가져오기
+        val remoteMessages = Either.catch { remoteDataSource.getMessages() }
+            .mapLeft { e -> e.toNetworkError() }
+            .bind()
 
         // 로컬 DB에 저장
-        try {
-            val entities = remoteMessages.map { it.toEntity() }
-            localDataSource.insertAll(entities)
-        } catch (e: Exception) {
-            raise(AppError.DatabaseError.WriteFailed(e))
-        }
+        Either.catch { localDataSource.insertAll(remoteMessages.map { it.toEntity() }) }
+            .mapLeft { it.toDatabaseError() }
+            .bind()
 
         // 3. 도메인 모델로 변환하여 반환
         remoteMessages.map { it.toDomain() }
@@ -73,32 +63,34 @@ class MessageRepositoryImpl @Inject constructor(
      * 메시지 삭제 (Optimistic Update)
      */
     override suspend fun deleteMessage(id: Int): Either<AppError, Unit> = either {
-        // 1. 로컬 먼저 삭제 (Optimistic Update)
-        try {
-            localDataSource.deleteById(id)
-        } catch (e: Exception) {
-            raise(AppError.DatabaseError.WriteFailed(e))
-        }
+
+        // 1. 로컬 삭제
+        Either.catch { localDataSource.deleteById(id) }
+            .mapLeft { it.toDatabaseError() }
+            .bind()
 
         // 2. 서버 삭제
-        try {
-            remoteDataSource.deleteMessage(id)
-        } catch (e: SocketTimeoutException) {
-            raise(AppError.NetworkError.Timeout(e))
-        } catch (e: IOException) {
-            raise(AppError.NetworkError.ConnectionFailed(e))
-        } catch (e: HttpException) {
-            raise(AppError.NetworkError.ServerError(e.code()))
-        } catch (e: Exception) {
-            raise(AppError.Unknown(e))
-        }
+        Either.catch { remoteDataSource.deleteMessage(id) }
+            .mapLeft { it.toNetworkError() }
+            .bind()
     }
 
     override suspend fun clearAllMessages(): Either<AppError, Unit> = either {
-        try {
-            localDataSource.deleteAll()
-        } catch (e: Exception) {
-            raise(AppError.DatabaseError.WriteFailed(e))
-        }
+        Either.catch { localDataSource.deleteAll() }
+            .mapLeft { it.toDatabaseError() }
+            .bind()
+    }
+
+    // 예외 변환 확장함수
+    private fun Throwable.toNetworkError(): AppError = when (this) {
+        is SocketTimeoutException -> AppError.NetworkError.Timeout(this)
+        is IOException -> AppError.NetworkError.ConnectionFailed(this)
+        is HttpException -> AppError.NetworkError.ServerError(code())
+        else -> AppError.Unknown(this)
+    }
+
+    private fun Throwable.toDatabaseError(): AppError = when (this) {
+        is SQLiteException -> AppError.DatabaseError.WriteFailed(this)
+        else -> AppError.DatabaseError.WriteFailed(this)
     }
 }
