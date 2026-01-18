@@ -3,6 +3,7 @@ package com.example.presentation.detail
 import androidx.lifecycle.ViewModel
 import com.example.domain.usecase.DeleteMessageUseCase
 import com.example.domain.usecase.ObserveMessageDetailUseCase
+import com.example.presentation.util.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -59,15 +60,16 @@ class DetailViewModel @Inject constructor(
         state.message?.let { message ->
             reduce { state.copy(isLoading = true) }
 
-            deleteMessageUseCase(message.id)
-                .onSuccess {
+            deleteMessageUseCase(message.id).fold(
+                ifLeft = { error ->
+                    reduce { state.copy(isLoading = false) }
+                    postSideEffect(DetailSideEffect.ShowError(error.toUserMessage()))
+                },
+                ifRight = {
                     postSideEffect(DetailSideEffect.ShowSnackBar("Message deleted"))
                     postSideEffect(DetailSideEffect.NavigateBack)
                 }
-                .onFailure { error ->
-                    reduce { state.copy(isLoading = false) }
-                    postSideEffect(DetailSideEffect.ShowError(error.message ?: "Failed to delete"))
-                }
+            )
         }
     }
 }

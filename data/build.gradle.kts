@@ -64,4 +64,8 @@ dependencies {
     implementation(libs.retrofit.converter.moshi)
     implementation(libs.moshi.core)
     implementation(libs.moshi.kotlin)
+
+    // Array
+    implementation(libs.arrow.core)
+    implementation(libs.arrow.fx.coroutines)
 }

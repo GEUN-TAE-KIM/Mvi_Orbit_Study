@@ -28,6 +28,12 @@ fun Message.toEntity(): MessageEntity {
     )
 }
 
+fun MessageDto.toDomain(): Message = Message(
+    id = this.id,
+    title = this.title,
+    body = this.body
+)
+
 // 💡 Mapper 함수를 만드는 이유
 // 1. 각 레이어 간 의존성 분리
 // 2. 데이터 구조 변경에 대한 유연성
