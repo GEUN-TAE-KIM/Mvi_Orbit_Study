@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -82,10 +83,5 @@ dependencies {
     // Retrofit + OkHttp
     implementation(libs.retrofit)
     implementation(libs.okhttp.logging)
-
-    // Moshi
-    implementation(libs.retrofit.converter.moshi)
-    implementation(libs.moshi.core)
-    implementation(libs.moshi.kotlin)
 
 }

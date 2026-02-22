@@ -1,6 +1,9 @@
 package com.example.data.remote
 
+import kotlinx.serialization.Serializable
+
 // 네트워크 응답용 데이터 클래스
+@Serializable
 data class MessageDto(
     val id: Int,
     val title: String,
