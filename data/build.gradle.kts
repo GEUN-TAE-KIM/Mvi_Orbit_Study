@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -60,10 +61,9 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.okhttp.logging)
 
-    // Moshi
-    implementation(libs.retrofit.converter.moshi)
-    implementation(libs.moshi.core)
-    implementation(libs.moshi.kotlin)
+    // Kotlinx Serialization
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
 
     // Array
     implementation(libs.arrow.core)
